@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RootSeek Web Interface</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 800px; margin: auto; text-align: center; }
+        .result { margin-top: 20px; padding: 10px; border: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>RootSeek - Machine Learning Model</h1>
+        
+        <h2>Upload Dataset</h2>
+        <input type="file" id="fileInput" />
+        <button onclick="uploadFile()">Upload & Train</button>
+        
+        <div id="trainResult" class="result"></div>
+        
+        <h2>Make Prediction</h2>
+        <textarea id="inputData" rows="4" cols="50" placeholder='Enter JSON data (e.g., {"feature1": 1.2, "feature2": 3.4})'></textarea>
+        <button onclick="makePrediction()">Predict</button>
+        
+        <div id="predictionResult" class="result"></div>
+        
+        <h2>Environmental Conditions</h2>
+        <p>Indoor Temperature: <span id="temperature">N/A</span> °C</p>
+        <p>Outdoor Temperature: <span id="temperatureOutside">N/A</span> °C</p>
+        <p>Indoor Humidity: <span id="humidity">N/A</span> %</p>
+        <p>Outdoor Humidity: <span id="humidityOutside">N/A</span> %</p>
+        <p>Closeness of Root Detected: <span id="rootCloseness">N/A</span> cm</p>
+    </div>
+
+    <script>
+        function uploadFile() {
+            let fileInput = document.getElementById('fileInput');
+            if (fileInput.files.length === 0) {
+                alert("Please select a file to upload.");
+                return;
+            }
+            let formData = new FormData();
+            formData.append("file", fileInput.files[0]);
+
+            $.ajax({
+                url: '/train',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    $("#trainResult").html("Model trained successfully!<br> Accuracy: " + response.accuracy + "<br>Report: " + JSON.stringify(response.report));
+                },
+                error: function() {
+                    $("#trainResult").html("Error in training the model.");
+                }
+            });
+        }
+
+        function makePrediction() {
+            let inputData = document.getElementById('inputData').value;
+            if (!inputData) {
+                alert("Please enter input data for prediction.");
+                return;
+            }
+
+            $.ajax({
+                url: '/predict',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ data: JSON.parse(inputData) }),
+                success: function(response) {
+                    $("#predictionResult").html("Prediction: " + response.prediction);
+                    $("#temperature").text(response.temperature);
+                    $("#temperatureOutside").text(response.temperatureOutside);
+                    $("#humidity").text(response.humidity);
+                    $("#humidityOutside").text(response.humidityOutside);
+                    $("#rootCloseness").text(response.root_closeness + " cm");
+                },
+                error: function() {
+                    $("#predictionResult").html("Error in making prediction.");
+                }
+            });
+        }
+    </script>
+</body>
+</html>
