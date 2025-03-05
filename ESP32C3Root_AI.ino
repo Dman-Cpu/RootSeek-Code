@@ -8,41 +8,36 @@
 #define ECHO_PIN 4
 #define DHT_PIN 10
 #define DHT_TYPE DHT11
-#define SMP 0
+#define SMP A0  // Change to A0 or A1 if needed
 
 // Initialize sensors
 DHT dht(DHT_PIN, DHT_TYPE);
 
-// Initialize U8g2 for I2C OLED (adjust clock/data pins as needed)
+// Initialize U8g2 for I2C OLED
 U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE, /* clock=*/ 9, /* data=*/ 8);
 
-// Calibration values for soil moisture sensor
-const int dryValue = 800;  // Raw sensor value when soil is completely dry
-const int wetValue = 300;  // Raw sensor value when soil is completely wet
+// Calibration values for soil moisture sensor (Adjust based on real readings)
+int dryValue = 800;  // Adjust this based on real dry sensor readings
+int wetValue = 300;  // Adjust this based on real wet sensor readings
 
 // Variables for other sensors
 float temperature, humidity;
 long duration;
 float distance;
 
-// AI placeholder: threshold-based root detection
 bool detectRoots(float distance, float humidity) {
-  // Example rule: roots detected if distance < 10cm and humidity > 60%
   return (distance < 10.0 && humidity > 60.0);
 }
 
 void setup() {
   Serial.begin(115200);
-
-  // Initialize sensors
+  
   dht.begin();
   pinMode(TRIG_PIN, OUTPUT);
   pinMode(ECHO_PIN, INPUT);
 
-  // Initialize OLED
   u8g2.begin();
   
-  // Welcome screen (using the compact font)
   u8g2.clearBuffer();
   u8g2.setFont(u8g2_font_6x10_tr);
   u8g2.drawStr(0, 12, "Tree Root Detect");
@@ -62,17 +57,25 @@ void loop() {
   delayMicroseconds(10);
   digitalWrite(TRIG_PIN, LOW);
   duration = pulseIn(ECHO_PIN, HIGH);
-  distance = duration * 0.034 / 2; // Convert to cm
+  distance = duration * 0.034 / 2;
 
   // Read soil moisture sensor data
   int sensorValue = analogRead(SMP);
+
+  // Validate and adjust calibration values dynamically
+  if (sensorValue < wetValue) {
+    wetValue = sensorValue;
+  }
+  if (sensorValue > dryValue) {
+    dryValue = sensorValue;
+  }
+
   int moisturePercent = map(sensorValue, dryValue, wetValue, 0, 100);
   moisturePercent = constrain(moisturePercent, 0, 100);
-
-  // Determine if roots are detected (based on sample AI rule)
+  
   bool rootsDetected = detectRoots(distance, humidity);
 
-  // Update OLED display using the compact font and adjusted positions
+  // Update OLED display
   u8g2.clearBuffer();
   u8g2.setFont(u8g2_font_6x10_tr);
 
@@ -116,5 +119,5 @@ void loop() {
   Serial.print(moisturePercent);
   Serial.println("%");
 
-  delay(1000); // Update every second
+  delay(1000);
 }
