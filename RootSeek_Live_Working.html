@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>RootSeek AI-Powered Web Interface</title>
+
+
+<style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-image: url('https://i.postimg.cc/138VDb6V/Background.webp');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            color: #ffffff;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+        }
+
+        .container {
+            position: relative;
+            background: rgba(255, 255, 255, 0.3);
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 800px;
+            margin: auto;
+            text-align: center;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+            color: #222222;
+        }
+
+        h1, h2 {
+            color: #ffffff;
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.8);
+        }
+
+        /* ✅ Environmental Conditions with Shadow */
+        .temperature { color: red; font-weight: bold; text-shadow: 2px 2px 5px black; }
+        .humidity { color: blue; font-weight: bold; text-shadow: 2px 2px 5px black; }
+        .distance { color: green; font-weight: bold; text-shadow: 2px 2px 5px black; }
+        .soilMoisture { color: brown; font-weight: bold; text-shadow: 2px 2px 5px black; }
+
+        /* ✅ Chart Title */
+        .chart-title {
+            font-size: 28px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 3px 3px 6px black;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 8px;
+            border-radius: 5px;
+            display: inline-block;
+            margin-top: 10px;
+        }
+
+        /* ✅ Export Button */
+        .export-btn {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        
+        .export-btn:hover {
+            background-color: #45a049;
+        }
+
+        /* ✅ Improved Canvas Readability */
+        canvas#resultsChart {
+            width: 100% !important;
+            height: 400px !important;
+            display: block !important;
+            background: white;
+        }
+
+        .loading {
+            display: none;
+            margin-top: 10px;
+            font-weight: bold;
+            color: red;
+        }
+
+        #chartError {
+            color: red;
+            display: none;
+            margin-top: 10px;
+        }
+    </style>
+<script src="chart.umd.js"></script>>
+</script></head>
+<body>
+<div class="container">
+<h1>RootSeek - AI-Powered Machine Learning Model</h1>
+<p>A tool for analyzing environmental trends based on data readings.</p>
+<h2>Upload JSON Data</h2>
+
+
+<h2>Select Scenario</h2>
+
+<h2>Environmental Conditions</h2>
+<p class="temperature">Ground Temperature: <span id="temperature">N/A</span> °C</p>
+<p class="humidity">Humidity: <span id="humidity">N/A</span> %</p>
+<p class="distance">Root Distance: <span id="distance">N/A</span> cm</p>
+<p class="soilMoisture">Soil Moisture: <span id="moisturePercent">N/A</span> %</p>
+<h2 class="chart-title">Environmental Trends Over Time</h2>
+<canvas id="resultsChart"></canvas>
+<p id="chartError">Error: No data available for chart.</p>
+<!-- ✅ New Export Button -->
+
+</div>
+
+<h1>Sensor Data</h1>
+  <pre id="data">Loading...</pre>
+
+<script>
+async function fetchData() {
+    try {
+        const response = await fetch('http://192.168.7.218/data'); // Replace with your ESP32's IP
+        const data = await response.json();
+        document.getElementById("temperature").innerText = JSON.stringify(data.temperature, null, 2);
+        document.getElementById("humidity").innerText = JSON.stringify(data.humidity, null, 2);
+        document.getElementById("distance").innerText = JSON.stringify(data.distance, null, 2);
+        document.getElementById("soilMoisture").innerText = JSON.stringify(data.moisturePercent, null, 2);
+    } catch (error) {
+        console.error("ESP32 data fetch failed:", error);
+    }
+   }
+
+    setInterval(fetchData, 2000);
+    fetchData();
+</script>
+<head>
+    <title>Real-Time Plot (WebSocket)</title>
+    <script src="chart.umd.js"></script>
+</head>
+<body>
+    <canvas id="myChart"></canvas>
+    <script>
+        const ctx = document.getElementById('myChart').getContext('2d');
+        const chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Time Series Data',
+                    data: [],
+                    borderColor: 'rgb(75, 192, 192)',
+                    tension: 0.1
+                }]
+            },
+            options: {}
+        });
+        
+        const websocket = new WebSocket('ws://localhost:8765');
+        
+        websocket.onmessage = (event) => {
+            console.log('Received data:', event.data);
+            try {
+                const newData = JSON.parse(event.data);
+                console.log('Parsed data:', newData);
+                chart.data.labels = Array.from(Array(newData.length).keys());
+                chart.data.datasets[0].data = newData;
+                chart.update();
+            } catch (error) {
+                console.error('Error parsing JSON:', error, event.data);
+            }
+        };
+        
+        websocket.onclose = () => {
+            console.log('WebSocket connection closed');
+        };
+        
+        websocket.onerror = (error) => {
+            console.error('WebSocket error:', error);
+        };
+        </script>
+        
+</body>
+</html>
