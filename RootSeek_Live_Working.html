@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>RootSeek AI-Powered Web Interface</title>
+<title>RootSeek</title>
 
 
 <style>
@@ -38,10 +38,9 @@
         }
 
         /* ✅ Environmental Conditions with Shadow */
-        .temperature { color: red; font-weight: bold; text-shadow: 2px 2px 5px black; }
-        .humidity { color: blue; font-weight: bold; text-shadow: 2px 2px 5px black; }
-        .distance { color: green; font-weight: bold; text-shadow: 2px 2px 5px black; }
-        .soilMoisture { color: brown; font-weight: bold; text-shadow: 2px 2px 5px black; }
+        .temperature { color: rgb(255, 170, 0); font-weight: bold }
+        .humidity { color: rgb(113, 195, 243); font-weight: bold}
+        .soilMoisture { color: rgb(190, 216, 215); font-weight: bold}
 
         /* ✅ Chart Title */
         .chart-title {
@@ -97,27 +96,21 @@
 </script></head>
 <body>
 <div class="container">
-<h1>RootSeek - AI-Powered Machine Learning Model</h1>
+<h1>RootSeek</h1>
 <p>A tool for analyzing environmental trends based on data readings.</p>
-<h2>Upload JSON Data</h2>
 
-
-<h2>Select Scenario</h2>
 
 <h2>Environmental Conditions</h2>
 <p class="temperature">Ground Temperature: <span id="temperature">N/A</span> °C</p>
 <p class="humidity">Humidity: <span id="humidity">N/A</span> %</p>
-<p class="distance">Root Distance: <span id="distance">N/A</span> cm</p>
 <p class="soilMoisture">Soil Moisture: <span id="moisturePercent">N/A</span> %</p>
-<h2 class="chart-title">Environmental Trends Over Time</h2>
-<canvas id="resultsChart"></canvas>
+
+<canvas id="dataDisplay"></canvas>
 <p id="chartError">Error: No data available for chart.</p>
 <!-- ✅ New Export Button -->
 
 </div>
 
-<h1>Sensor Data</h1>
-  <pre id="data">Loading...</pre>
 
 <script>
 async function fetchData() {
@@ -126,7 +119,6 @@ async function fetchData() {
         const data = await response.json();
         document.getElementById("temperature").innerText = JSON.stringify(data.temperature, null, 2);
         document.getElementById("humidity").innerText = JSON.stringify(data.humidity, null, 2);
-        document.getElementById("distance").innerText = JSON.stringify(data.distance, null, 2);
         document.getElementById("soilMoisture").innerText = JSON.stringify(data.moisturePercent, null, 2);
     } catch (error) {
         console.error("ESP32 data fetch failed:", error);
@@ -137,50 +129,46 @@ async function fetchData() {
     fetchData();
 </script>
 <head>
-    <title>Real-Time Plot (WebSocket)</title>
-    <script src="chart.umd.js"></script>
-</head>
-<body>
-    <canvas id="myChart"></canvas>
+    <title>WebSocket Data Display</title>
     <script>
-        const ctx = document.getElementById('myChart').getContext('2d');
-        const chart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: [],
-                datasets: [{
-                    label: 'Time Series Data',
-                    data: [],
-                    borderColor: 'rgb(75, 192, 192)',
-                    tension: 0.1
-                }]
-            },
-            options: {}
-        });
-        
-        const websocket = new WebSocket('ws://localhost:8765');
-        
-        websocket.onmessage = (event) => {
-            console.log('Received data:', event.data);
-            try {
-                const newData = JSON.parse(event.data);
-                console.log('Parsed data:', newData);
-                chart.data.labels = Array.from(Array(newData.length).keys());
-                chart.data.datasets[0].data = newData;
-                chart.update();
-            } catch (error) {
-                console.error('Error parsing JSON:', error, event.data);
+        var ws = new WebSocket("ws://localhost:8765"); // Replace with your WebSocket server URL
+
+        ws.onopen = function(event) {
+            console.log("WebSocket connection established.");
+        };
+
+        ws.onmessage = function(event) {
+            var data = JSON.parse(event.data);
+            displayData(data); // Call function to display data
+        };
+
+        ws.onclose = function(event) {
+            console.log("WebSocket connection closed.");
+        };
+
+        ws.onerror = function(error) {
+            console.error("WebSocket error:", error);
+        };
+
+        function displayData(data) {
+            var displayArea = document.getElementById("dataDisplay");
+            displayArea.innerHTML = ""; // Clear previous data
+
+            if (Array.isArray(data)) {
+                data.forEach(function(item) {
+                    if (Array.isArray(item)) {
+                        displayArea.innerHTML += "<p>[" + item.join(", ") + "]</p>"; // Display array items
+                    } else {
+                        displayArea.innerHTML += "<p>" + item + "</p>"; // Display single item
+                    }
+                });
+            } else {
+                displayArea.innerHTML = "<p>" + JSON.stringify(data) + "</p>"; // Display non array data.
             }
-        };
-        
-        websocket.onclose = () => {
-            console.log('WebSocket connection closed');
-        };
-        
-        websocket.onerror = (error) => {
-            console.error('WebSocket error:', error);
-        };
-        </script>
+
+        }
+    </script>
+</head>
         
 </body>
 </html>
