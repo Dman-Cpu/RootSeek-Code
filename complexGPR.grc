@@ -293,6 +293,38 @@ blocks:
     coordinate: [1208, 592.0]
     rotation: 0
     state: true
+- name: epy_block_1
+  id: epy_block
+  parameters:
+    _source_code: "\nfrom gnuradio import gr\nimport numpy as np\nimport asyncio\n\
+      import websockets\nimport json\n\n\nclass websocket_float_sink(gr.sync_block):\n\
+      \    def __init__(self, uri=\"ws://localhost:8765\", downsample=10):\n     \
+      \   gr.sync_block.__init__(\n            self,\n            name=\"websocket_float_sink\"\
+      ,\n            in_sig=[np.float32],\n            out_sig=[]\n        )\n   \
+      \     self.uri = uri\n        self.downsample = downsample\n\n    def work(self,\
+      \ input_items, output_items):\n        samples = input_items[0]\n        reduced\
+      \ = samples[::self.downsample]\n        data = {\"values\": reduced.tolist()}\n\
+      \        try:\n            asyncio.run(self.send_data(data))\n        except\
+      \ Exception:\n            pass\n        return len(samples)\n        print(\"\
+      Sending float data:\", reduced[:5])\n\n    async def send_data(self, data):\n\
+      \        async with websockets.connect(self.uri) as websocket:\n           \
+      \ await websocket.send(json.dumps(data))\n\n"
+    affinity: ''
+    alias: ''
+    comment: ''
+    downsample: '10'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    uri: '''ws://localhost:8765'''
+  states:
+    _io_cache: ('websocket_float_sink', 'websocket_float_sink', [('uri', "'ws://localhost:8765'"),
+      ('downsample', '10')], [('0', 'float', 1)], [], '', ['downsample', 'uri'])
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1944, 776.0]
+    rotation: 0
+    state: true
 - name: iio_pluto_sink_0
   id: iio_pluto_sink
   parameters:
@@ -672,6 +704,7 @@ blocks:
     state: true
 
 connections:
+- [blocks_complex_to_mag_0, '0', epy_block_1, '0']
 - [blocks_complex_to_mag_0, '0', qtgui_time_sink_x_1, '0']
 - [blocks_conjugate_cc_0, '0', blocks_multiply_xx_0, '0']
 - [blocks_float_to_complex_0, '0', blocks_stream_to_vector_0, '0']
